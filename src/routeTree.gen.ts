@@ -11,8 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as USlugRouteImport } from './routes/u.$slug'
+import { Route as USlugAgendarRouteImport } from './routes/u.$slug.agendar'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -22,6 +24,11 @@ const SignupRoute = SignupRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -34,39 +41,70 @@ const USlugRoute = USlugRouteImport.update({
   path: '/u/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const USlugAgendarRoute = USlugAgendarRouteImport.update({
+  id: '/agendar',
+  path: '/agendar',
+  getParentRoute: () => USlugRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
-  '/u/$slug': typeof USlugRoute
+  '/u/$slug': typeof USlugRouteWithChildren
+  '/u/$slug/agendar': typeof USlugAgendarRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
-  '/u/$slug': typeof USlugRoute
+  '/u/$slug': typeof USlugRouteWithChildren
+  '/u/$slug/agendar': typeof USlugAgendarRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
-  '/u/$slug': typeof USlugRoute
+  '/u/$slug': typeof USlugRouteWithChildren
+  '/u/$slug/agendar': typeof USlugAgendarRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/signup' | '/u/$slug'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/login'
+    | '/signup'
+    | '/u/$slug'
+    | '/u/$slug/agendar'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/signup' | '/u/$slug'
-  id: '__root__' | '/' | '/login' | '/signup' | '/u/$slug'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/login'
+    | '/signup'
+    | '/u/$slug'
+    | '/u/$slug/agendar'
+  id:
+    | '__root__'
+    | '/'
+    | '/dashboard'
+    | '/login'
+    | '/signup'
+    | '/u/$slug'
+    | '/u/$slug/agendar'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
-  USlugRoute: typeof USlugRoute
+  USlugRoute: typeof USlugRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -85,6 +123,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -99,14 +144,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof USlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/u/$slug/agendar': {
+      id: '/u/$slug/agendar'
+      path: '/agendar'
+      fullPath: '/u/$slug/agendar'
+      preLoaderRoute: typeof USlugAgendarRouteImport
+      parentRoute: typeof USlugRoute
+    }
   }
 }
 
+interface USlugRouteChildren {
+  USlugAgendarRoute: typeof USlugAgendarRoute
+}
+
+const USlugRouteChildren: USlugRouteChildren = {
+  USlugAgendarRoute: USlugAgendarRoute,
+}
+
+const USlugRouteWithChildren = USlugRoute._addFileChildren(USlugRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
-  USlugRoute: USlugRoute,
+  USlugRoute: USlugRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
