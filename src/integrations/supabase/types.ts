@@ -14,7 +14,293 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      blocked_slots: {
+        Row: {
+          created_at: string
+          end_ts: string
+          id: string
+          profile_id: string
+          reason: string | null
+          staff_id: string
+          start_ts: string
+        }
+        Insert: {
+          created_at?: string
+          end_ts: string
+          id?: string
+          profile_id: string
+          reason?: string | null
+          staff_id: string
+          start_ts: string
+        }
+        Update: {
+          created_at?: string
+          end_ts?: string
+          id?: string
+          profile_id?: string
+          reason?: string | null
+          staff_id?: string
+          start_ts?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blocked_slots_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "blocked_slots_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bookings: {
+        Row: {
+          catalog_item_id: string | null
+          created_at: string
+          customer_name: string
+          customer_phone: string
+          end_ts: string
+          id: string
+          notes: string | null
+          profile_id: string
+          service_name: string
+          staff_id: string
+          start_ts: string
+          status: string
+        }
+        Insert: {
+          catalog_item_id?: string | null
+          created_at?: string
+          customer_name: string
+          customer_phone: string
+          end_ts: string
+          id?: string
+          notes?: string | null
+          profile_id: string
+          service_name: string
+          staff_id: string
+          start_ts: string
+          status?: string
+        }
+        Update: {
+          catalog_item_id?: string | null
+          created_at?: string
+          customer_name?: string
+          customer_phone?: string
+          end_ts?: string
+          id?: string
+          notes?: string | null
+          profile_id?: string
+          service_name?: string
+          staff_id?: string
+          start_ts?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_catalog_item_id_fkey"
+            columns: ["catalog_item_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "bookings_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      buttons: {
+        Row: {
+          created_at: string
+          icon: string | null
+          id: string
+          kind: string
+          label: string
+          profile_id: string
+          sort_order: number
+          value: string | null
+        }
+        Insert: {
+          created_at?: string
+          icon?: string | null
+          id?: string
+          kind: string
+          label: string
+          profile_id: string
+          sort_order?: number
+          value?: string | null
+        }
+        Update: {
+          created_at?: string
+          icon?: string | null
+          id?: string
+          kind?: string
+          label?: string
+          profile_id?: string
+          sort_order?: number
+          value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buttons_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      catalog_items: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          duration_min: number
+          id: string
+          name: string
+          price_cents: number | null
+          profile_id: string
+          sort_order: number
+          staff_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          duration_min?: number
+          id?: string
+          name: string
+          price_cents?: number | null
+          profile_id: string
+          sort_order?: number
+          staff_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          duration_min?: number
+          id?: string
+          name?: string
+          price_cents?: number | null
+          profile_id?: string
+          sort_order?: number
+          staff_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_items_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "catalog_items_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          business_name: string
+          created_at: string
+          instagram_url: string | null
+          slug: string
+          theme: Json
+          updated_at: string
+          user_id: string
+          whatsapp_phone: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          business_name: string
+          created_at?: string
+          instagram_url?: string | null
+          slug: string
+          theme?: Json
+          updated_at?: string
+          user_id: string
+          whatsapp_phone?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          business_name?: string
+          created_at?: string
+          instagram_url?: string | null
+          slug?: string
+          theme?: Json
+          updated_at?: string
+          user_id?: string
+          whatsapp_phone?: string | null
+        }
+        Relationships: []
+      }
+      staff: {
+        Row: {
+          active: boolean
+          avatar_url: string | null
+          created_at: string
+          id: string
+          name: string
+          profile_id: string
+          role: string | null
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          profile_id: string
+          role?: string | null
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          profile_id?: string
+          role?: string | null
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
