@@ -48,8 +48,13 @@ function Dashboard() {
     enabled: !!user,
     queryFn: async () => (await supabase.from("bookings").select("*, staff(name)").eq("profile_id", user!.id).gte("start_ts", new Date().toISOString()).order("start_ts").limit(20)).data ?? [],
   });
+  const { data: photos } = useQuery({
+    queryKey: ["my-photos", user?.id],
+    enabled: !!user,
+    queryFn: async () => (await supabase.from("gallery_photos").select("*").eq("profile_id", user!.id).order("sort_order")).data ?? [],
+  });
 
-  const [tab, setTab] = useState<"perfil" | "botoes" | "colaboradoras" | "servicos" | "agenda" | "tema">("perfil");
+  const [tab, setTab] = useState<"perfil" | "botoes" | "galeria" | "colaboradoras" | "servicos" | "agenda" | "tema">("perfil");
 
   if (loading || !profile) return <div className="min-h-screen grid place-items-center font-mono text-xs uppercase tracking-widest text-muted-foreground">Carregando...</div>;
 
@@ -72,13 +77,14 @@ function Dashboard() {
         <p className="text-muted-foreground text-sm mb-8">Painel administrativo</p>
 
         <nav className="flex gap-2 mb-8 overflow-x-auto pb-2">
-          {(["perfil", "botoes", "colaboradoras", "servicos", "agenda", "tema"] as const).map((t) => (
+          {(["perfil", "botoes", "galeria", "colaboradoras", "servicos", "agenda", "tema"] as const).map((t) => (
             <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 rounded-full text-xs font-medium uppercase tracking-wider whitespace-nowrap ${tab === t ? "bg-foreground text-background" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>{t}</button>
           ))}
         </nav>
 
         {tab === "perfil" && <PerfilTab profile={profile} onSave={invalidate} />}
         {tab === "botoes" && <ButtonsTab userId={user!.id} items={buttons ?? []} onChange={invalidate} />}
+        {tab === "galeria" && <GalleryTab userId={user!.id} items={photos ?? []} onChange={invalidate} />}
         {tab === "colaboradoras" && <StaffTab userId={user!.id} items={staff ?? []} onChange={invalidate} />}
         {tab === "servicos" && <ServicesTab userId={user!.id} items={services ?? []} staff={staff ?? []} onChange={invalidate} />}
         {tab === "agenda" && <AgendaTab userId={user!.id} staff={staff ?? []} bookings={bookings ?? []} onChange={invalidate} />}
