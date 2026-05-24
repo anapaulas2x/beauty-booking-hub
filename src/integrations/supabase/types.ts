@@ -128,6 +128,7 @@ export type Database = {
       }
       buttons: {
         Row: {
+          color: string | null
           created_at: string
           icon: string | null
           id: string
@@ -138,6 +139,7 @@ export type Database = {
           value: string | null
         }
         Insert: {
+          color?: string | null
           created_at?: string
           icon?: string | null
           id?: string
@@ -148,6 +150,7 @@ export type Database = {
           value?: string | null
         }
         Update: {
+          color?: string | null
           created_at?: string
           icon?: string | null
           id?: string
@@ -218,6 +221,38 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "staff"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      gallery_photos: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string
+          profile_id: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url: string
+          profile_id: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string
+          profile_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gallery_photos_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
           },
         ]
       }

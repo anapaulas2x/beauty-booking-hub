@@ -48,8 +48,13 @@ function Dashboard() {
     enabled: !!user,
     queryFn: async () => (await supabase.from("bookings").select("*, staff(name)").eq("profile_id", user!.id).gte("start_ts", new Date().toISOString()).order("start_ts").limit(20)).data ?? [],
   });
+  const { data: photos } = useQuery({
+    queryKey: ["my-photos", user?.id],
+    enabled: !!user,
+    queryFn: async () => (await supabase.from("gallery_photos").select("*").eq("profile_id", user!.id).order("sort_order")).data ?? [],
+  });
 
-  const [tab, setTab] = useState<"perfil" | "botoes" | "colaboradoras" | "servicos" | "agenda" | "tema">("perfil");
+  const [tab, setTab] = useState<"perfil" | "botoes" | "galeria" | "colaboradoras" | "servicos" | "agenda" | "tema">("perfil");
 
   if (loading || !profile) return <div className="min-h-screen grid place-items-center font-mono text-xs uppercase tracking-widest text-muted-foreground">Carregando...</div>;
 
@@ -72,13 +77,14 @@ function Dashboard() {
         <p className="text-muted-foreground text-sm mb-8">Painel administrativo</p>
 
         <nav className="flex gap-2 mb-8 overflow-x-auto pb-2">
-          {(["perfil", "botoes", "colaboradoras", "servicos", "agenda", "tema"] as const).map((t) => (
+          {(["perfil", "botoes", "galeria", "colaboradoras", "servicos", "agenda", "tema"] as const).map((t) => (
             <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 rounded-full text-xs font-medium uppercase tracking-wider whitespace-nowrap ${tab === t ? "bg-foreground text-background" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>{t}</button>
           ))}
         </nav>
 
         {tab === "perfil" && <PerfilTab profile={profile} onSave={invalidate} />}
         {tab === "botoes" && <ButtonsTab userId={user!.id} items={buttons ?? []} onChange={invalidate} />}
+        {tab === "galeria" && <GalleryTab userId={user!.id} items={photos ?? []} onChange={invalidate} />}
         {tab === "colaboradoras" && <StaffTab userId={user!.id} items={staff ?? []} onChange={invalidate} />}
         {tab === "servicos" && <ServicesTab userId={user!.id} items={services ?? []} staff={staff ?? []} onChange={invalidate} />}
         {tab === "agenda" && <AgendaTab userId={user!.id} staff={staff ?? []} bookings={bookings ?? []} onChange={invalidate} />}
@@ -123,17 +129,23 @@ function PerfilTab({ profile, onSave }: { profile: any; onSave: () => void }) {
 }
 
 function ButtonsTab({ userId, items, onChange }: { userId: string; items: any[]; onChange: () => void }) {
-  const [draft, setDraft] = useState<{ label: string; kind: string; value: string; icon: string | null }>({ label: "", kind: "whatsapp", value: "", icon: null });
+  const PILL_COLORS = ["#f7a8c4", "#b8a4e3", "#f4b89a", "#a8d8b9", "#f3c577", "#e89bb8"];
+  const [draft, setDraft] = useState<{ label: string; kind: string; value: string; icon: string | null; color: string }>({ label: "", kind: "whatsapp", value: "", icon: null, color: PILL_COLORS[0] });
   const add = async () => {
     if (!draft.label) return;
-    const { error } = await supabase.from("buttons").insert({ profile_id: userId, label: draft.label, kind: draft.kind, value: draft.value, icon: draft.icon, sort_order: items.length });
+    const { error } = await supabase.from("buttons").insert({ profile_id: userId, label: draft.label, kind: draft.kind, value: draft.value, icon: draft.icon, color: draft.color, sort_order: items.length });
     if (error) return toast.error(error.message);
-    setDraft({ label: "", kind: "whatsapp", value: "", icon: null });
+    setDraft({ label: "", kind: "whatsapp", value: "", icon: null, color: PILL_COLORS[0] });
     onChange();
   };
   const del = async (id: string) => { await supabase.from("buttons").delete().eq("id", id); onChange(); };
   const updateIcon = async (id: string, url: string | null) => {
     const { error } = await supabase.from("buttons").update({ icon: url }).eq("id", id);
+    if (error) return toast.error(error.message);
+    onChange();
+  };
+  const updateColor = async (id: string, color: string) => {
+    const { error } = await supabase.from("buttons").update({ color }).eq("id", id);
     if (error) return toast.error(error.message);
     onChange();
   };
@@ -143,10 +155,18 @@ function ButtonsTab({ userId, items, onChange }: { userId: string; items: any[];
         <div key={b.id} className="bg-card p-4 rounded-2xl ring-1 ring-border space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <div className="font-medium">{b.label}</div>
+              <div className="font-medium inline-flex items-center gap-2">
+                <span className="inline-block size-3 rounded-full" style={{ backgroundColor: b.color || PILL_COLORS[0] }} />
+                {b.label}
+              </div>
               <div className="text-xs text-muted-foreground font-mono uppercase">{b.kind}{b.value ? ` · ${b.value}` : ""}</div>
             </div>
             <button onClick={() => del(b.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="size-4" /></button>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {PILL_COLORS.map((c) => (
+              <button key={c} onClick={() => updateColor(b.id, c)} className={`size-7 rounded-full ${b.color === c ? "ring-2 ring-foreground ring-offset-2" : ""}`} style={{ backgroundColor: c }} />
+            ))}
           </div>
           <ImageUpload userId={userId} value={b.icon} onChange={(url) => updateIcon(b.id, url)} folder="icons" shape="square" />
         </div>
@@ -160,11 +180,55 @@ function ButtonsTab({ userId, items, onChange }: { userId: string; items: any[];
           <option value="link">Link genérico</option>
         </select>
         {draft.kind !== "whatsapp" && <input className={input()} placeholder="URL" value={draft.value} onChange={(e) => setDraft({ ...draft, value: e.target.value })} />}
+        <Field label="Cor do botão">
+          <div className="flex gap-2 flex-wrap">
+            {PILL_COLORS.map((c) => (
+              <button key={c} onClick={() => setDraft({ ...draft, color: c })} className={`size-8 rounded-full ${draft.color === c ? "ring-2 ring-foreground ring-offset-2" : ""}`} style={{ backgroundColor: c }} />
+            ))}
+          </div>
+        </Field>
         <Field label="Ícone (opcional)">
           <ImageUpload userId={userId} value={draft.icon} onChange={(url) => setDraft({ ...draft, icon: url })} folder="icons" shape="square" />
         </Field>
         <button onClick={add} className="px-5 py-2.5 rounded-full bg-foreground text-background text-sm font-medium inline-flex items-center gap-2"><Plus className="size-4" /> Adicionar botão</button>
       </div>
+    </div>
+  );
+}
+
+function GalleryTab({ userId, items, onChange }: { userId: string; items: any[]; onChange: () => void }) {
+  const add = async (url: string | null) => {
+    if (!url) return;
+    const { error } = await supabase.from("gallery_photos").insert({ profile_id: userId, image_url: url, sort_order: items.length });
+    if (error) return toast.error(error.message);
+    toast.success("Foto adicionada");
+    onChange();
+  };
+  const del = async (id: string) => {
+    await supabase.from("gallery_photos").delete().eq("id", id);
+    onChange();
+  };
+  return (
+    <div className="space-y-6 max-w-2xl">
+      <div className="bg-card p-4 rounded-2xl ring-1 ring-border space-y-3">
+        <Field label="Adicionar foto à galeria">
+          <ImageUpload userId={userId} value={null} onChange={add} folder="gallery" shape="square" />
+        </Field>
+      </div>
+      {items.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Nenhuma foto ainda.</p>
+      ) : (
+        <div className="grid grid-cols-3 gap-3">
+          {items.map((p) => (
+            <div key={p.id} className="relative aspect-square rounded-2xl overflow-hidden group ring-1 ring-border">
+              <img src={p.image_url} alt="" className="w-full h-full object-cover" />
+              <button onClick={() => del(p.id)} className="absolute top-2 right-2 size-8 rounded-full bg-white/90 grid place-items-center text-destructive opacity-0 group-hover:opacity-100 transition">
+                <Trash2 className="size-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
