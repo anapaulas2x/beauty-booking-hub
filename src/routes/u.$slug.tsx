@@ -105,7 +105,11 @@ function PublicProfile() {
                 className="group w-full py-4 px-6 rounded-full border border-black/10 flex items-center justify-between hover:bg-stone-900 hover:text-white transition-all duration-300"
               >
                 <span className="text-sm font-medium flex items-center gap-3" style={{ fontFamily: b.kind === "whatsapp" ? fontFamily : undefined, fontStyle: b.kind === "whatsapp" ? "italic" : undefined }}>
-                  <Icon className="size-4" />
+                  {b.icon ? (
+                    <img src={b.icon} alt="" className="size-6 rounded object-cover" />
+                  ) : (
+                    <Icon className="size-4" />
+                  )}
                   {b.label}
                 </span>
                 <span className="font-mono text-[10px] opacity-50 group-hover:opacity-100">(0{i + 2})</span>

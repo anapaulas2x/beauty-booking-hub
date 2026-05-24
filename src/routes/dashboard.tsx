@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { ExternalLink, LogOut, Plus, Trash2, Calendar as CalendarIcon } from "lucide-react";
+import { ImageUpload } from "@/components/image-upload";
 
 export const Route = createFileRoute("/dashboard")({
   component: Dashboard,
@@ -111,7 +112,9 @@ function PerfilTab({ profile, onSave }: { profile: any; onSave: () => void }) {
       <Field label="Nome do estúdio"><input className={input()} value={form.business_name} onChange={(e) => setForm({ ...form, business_name: e.target.value })} /></Field>
       <Field label="Slug (link público)"><input className={input()} value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") })} /></Field>
       <Field label="Bio"><textarea className="w-full px-4 py-2.5 rounded-2xl border border-border bg-background text-sm" rows={3} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} /></Field>
-      <Field label="URL da foto"><input className={input()} value={form.avatar_url} onChange={(e) => setForm({ ...form, avatar_url: e.target.value })} placeholder="https://..." /></Field>
+      <Field label="Foto de perfil">
+        <ImageUpload userId={profile.user_id} value={form.avatar_url} onChange={(url) => setForm({ ...form, avatar_url: url ?? "" })} folder="avatar" />
+      </Field>
       <Field label="WhatsApp (com DDD)"><input className={input()} value={form.whatsapp_phone} onChange={(e) => setForm({ ...form, whatsapp_phone: e.target.value })} placeholder="5511999999999" /></Field>
       <Field label="Instagram"><input className={input()} value={form.instagram_url} onChange={(e) => setForm({ ...form, instagram_url: e.target.value })} placeholder="https://instagram.com/..." /></Field>
       <button onClick={save} className="px-6 py-2.5 rounded-full bg-foreground text-background text-sm font-medium">Salvar</button>
@@ -120,24 +123,32 @@ function PerfilTab({ profile, onSave }: { profile: any; onSave: () => void }) {
 }
 
 function ButtonsTab({ userId, items, onChange }: { userId: string; items: any[]; onChange: () => void }) {
-  const [draft, setDraft] = useState({ label: "", kind: "whatsapp", value: "" });
+  const [draft, setDraft] = useState<{ label: string; kind: string; value: string; icon: string | null }>({ label: "", kind: "whatsapp", value: "", icon: null });
   const add = async () => {
     if (!draft.label) return;
-    const { error } = await supabase.from("buttons").insert({ profile_id: userId, label: draft.label, kind: draft.kind, value: draft.value, sort_order: items.length });
+    const { error } = await supabase.from("buttons").insert({ profile_id: userId, label: draft.label, kind: draft.kind, value: draft.value, icon: draft.icon, sort_order: items.length });
     if (error) return toast.error(error.message);
-    setDraft({ label: "", kind: "whatsapp", value: "" });
+    setDraft({ label: "", kind: "whatsapp", value: "", icon: null });
     onChange();
   };
   const del = async (id: string) => { await supabase.from("buttons").delete().eq("id", id); onChange(); };
+  const updateIcon = async (id: string, url: string | null) => {
+    const { error } = await supabase.from("buttons").update({ icon: url }).eq("id", id);
+    if (error) return toast.error(error.message);
+    onChange();
+  };
   return (
     <div className="space-y-4 max-w-2xl">
       {items.map((b) => (
-        <div key={b.id} className="bg-card p-4 rounded-2xl ring-1 ring-border flex items-center justify-between">
-          <div>
-            <div className="font-medium">{b.label}</div>
-            <div className="text-xs text-muted-foreground font-mono uppercase">{b.kind}{b.value ? ` · ${b.value}` : ""}</div>
+        <div key={b.id} className="bg-card p-4 rounded-2xl ring-1 ring-border space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-medium">{b.label}</div>
+              <div className="text-xs text-muted-foreground font-mono uppercase">{b.kind}{b.value ? ` · ${b.value}` : ""}</div>
+            </div>
+            <button onClick={() => del(b.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="size-4" /></button>
           </div>
-          <button onClick={() => del(b.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="size-4" /></button>
+          <ImageUpload userId={userId} value={b.icon} onChange={(url) => updateIcon(b.id, url)} folder="icons" shape="square" />
         </div>
       ))}
       <div className="bg-card p-4 rounded-2xl ring-1 ring-border space-y-3">
@@ -149,6 +160,9 @@ function ButtonsTab({ userId, items, onChange }: { userId: string; items: any[];
           <option value="link">Link genérico</option>
         </select>
         {draft.kind !== "whatsapp" && <input className={input()} placeholder="URL" value={draft.value} onChange={(e) => setDraft({ ...draft, value: e.target.value })} />}
+        <Field label="Ícone (opcional)">
+          <ImageUpload userId={userId} value={draft.icon} onChange={(url) => setDraft({ ...draft, icon: url })} folder="icons" shape="square" />
+        </Field>
         <button onClick={add} className="px-5 py-2.5 rounded-full bg-foreground text-background text-sm font-medium inline-flex items-center gap-2"><Plus className="size-4" /> Adicionar botão</button>
       </div>
     </div>
