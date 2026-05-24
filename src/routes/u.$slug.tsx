@@ -18,6 +18,8 @@ const iconFor = (kind: string) => {
   }
 };
 
+const PALETTE = ["#f7a8c4", "#b8a4e3", "#f4b89a", "#a8d8b9", "#f3c577", "#e89bb8"];
+
 function PublicProfile() {
   const { slug } = Route.useParams();
 
@@ -36,12 +38,17 @@ function PublicProfile() {
         .select("*")
         .eq("profile_id", profile.user_id)
         .order("sort_order");
-      return { profile, buttons: buttons ?? [] };
+      const { data: photos } = await supabase
+        .from("gallery_photos")
+        .select("*")
+        .eq("profile_id", profile.user_id)
+        .order("sort_order");
+      return { profile, buttons: buttons ?? [], photos: photos ?? [] };
     },
   });
 
   if (isLoading) {
-    return <div className="min-h-screen bg-background grid place-items-center font-mono text-xs uppercase tracking-widest text-muted-foreground">Carregando...</div>;
+    return <div className="min-h-screen grid place-items-center font-mono text-xs uppercase tracking-widest text-stone-400" style={{ backgroundColor: "#fde7ee" }}>Carregando...</div>;
   }
 
   if (!data) {
@@ -56,77 +63,116 @@ function PublicProfile() {
     );
   }
 
-  const { profile, buttons } = data;
-  const theme = (profile.theme ?? {}) as { accent?: string; font?: string; bg?: string };
-  const accent = theme.accent || "#a8543a";
-  const bg = theme.bg || "#fafaf7";
-  const fontFamily = theme.font === "sans" ? "var(--font-sans)" : "var(--font-serif)";
+  const { profile, buttons, photos } = data;
+  const theme = (profile.theme ?? {}) as { accent?: string; bg?: string; nameColor?: string };
+  const accent = theme.accent || "#ec6f9c";
+  const bg = theme.bg || "#fde7ee";
+  const nameColor = theme.nameColor || "#5a1f3d";
 
   return (
-    <div className="min-h-screen font-sans flex flex-col items-center pt-12 pb-24 px-6" style={{ backgroundColor: bg }}>
-      <div className="w-full max-w-[420px] bg-white ring-1 ring-black/5 rounded-[40px] p-8 shadow-2xl shadow-black/5">
-        <div className="flex flex-col items-center text-center mb-10">
+    <div className="min-h-screen font-sans flex flex-col items-center pt-10 pb-16 px-5" style={{ backgroundColor: bg }}>
+      <div className="w-full max-w-[440px]">
+        {/* Avatar */}
+        <div className="flex flex-col items-center text-center">
           {profile.avatar_url ? (
-            <img src={profile.avatar_url} alt={profile.business_name} className="size-24 rounded-full object-cover ring-1 ring-black/5 mb-6" />
+            <img
+              src={profile.avatar_url}
+              alt={profile.business_name}
+              className="size-36 rounded-full object-cover ring-4 ring-white shadow-lg"
+              style={{ outline: `3px solid ${accent}`, outlineOffset: "4px" }}
+            />
           ) : (
-            <div className="size-24 rounded-full bg-stone-100 grid place-items-center mb-6 ring-1 ring-black/5">
-              <Sparkles className="size-7" style={{ color: accent }} />
+            <div className="size-36 rounded-full bg-white grid place-items-center shadow-lg" style={{ outline: `3px solid ${accent}`, outlineOffset: "4px" }}>
+              <Sparkles className="size-10" style={{ color: accent }} />
             </div>
           )}
-          <h1 style={{ fontFamily }} className="text-3xl mb-2">{profile.business_name}</h1>
-          {profile.bio && <p className="text-stone-500 text-sm max-w-[280px] leading-relaxed">{profile.bio}</p>}
+
+          <h1 className="mt-6 text-5xl leading-none" style={{ fontFamily: "var(--font-script)", color: nameColor }}>
+            {profile.business_name}
+          </h1>
+          {profile.bio && (
+            <p className="mt-2 text-sm font-medium" style={{ color: nameColor, opacity: 0.85 }}>
+              {profile.bio}
+            </p>
+          )}
         </div>
 
-        <div className="space-y-3">
-          <Link
-            to="/u/$slug/agendar"
-            params={{ slug }}
-            className="group w-full py-4 px-6 rounded-full text-white flex items-center justify-between transition-all duration-300 hover:opacity-90"
-            style={{ backgroundColor: accent }}
-          >
-            <span className="text-sm font-medium flex items-center gap-3"><Calendar className="size-4" /> Agendar Online</span>
-            <span className="font-mono text-[10px] opacity-70">→</span>
-          </Link>
-
-          {buttons.map((b, i) => {
-            const Icon = iconFor(b.kind);
-            const href =
-              b.kind === "whatsapp"
-                ? whatsappUrl(profile.whatsapp_phone, `Olá! Tenho interesse em: ${b.label}`)
-                : b.kind === "instagram"
-                  ? profile.instagram_url || b.value || "#"
-                  : b.value || "#";
-            return (
-              <a
-                key={b.id}
-                href={href}
-                target="_blank"
-                rel="noreferrer"
-                className="group w-full py-4 px-6 rounded-full border border-black/10 flex items-center justify-between hover:bg-stone-900 hover:text-white transition-all duration-300"
-              >
-                <span className="text-sm font-medium flex items-center gap-3" style={{ fontFamily: b.kind === "whatsapp" ? fontFamily : undefined, fontStyle: b.kind === "whatsapp" ? "italic" : undefined }}>
+        {/* Service pills */}
+        {buttons.length > 0 && (
+          <div className="mt-7 flex flex-wrap justify-center gap-3">
+            {buttons.map((b, i) => {
+              const Icon = iconFor(b.kind);
+              const color = b.color || PALETTE[i % PALETTE.length];
+              const href =
+                b.kind === "whatsapp"
+                  ? whatsappUrl(profile.whatsapp_phone, `Olá! Tenho interesse em: ${b.label}`)
+                  : b.kind === "instagram"
+                    ? profile.instagram_url || b.value || "#"
+                    : b.value || "#";
+              return (
+                <a
+                  key={b.id}
+                  href={href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-5 py-3 rounded-2xl text-white text-sm font-semibold inline-flex items-center gap-2 shadow-md hover:scale-[1.03] active:scale-95 transition"
+                  style={{ backgroundColor: color }}
+                >
                   {b.icon ? (
-                    <img src={b.icon} alt="" className="size-6 rounded object-cover" />
+                    <img src={b.icon} alt="" className="size-5 rounded object-cover" />
                   ) : (
                     <Icon className="size-4" />
                   )}
                   {b.label}
-                </span>
-                <span className="font-mono text-[10px] opacity-50 group-hover:opacity-100">(0{i + 2})</span>
-              </a>
-            );
-          })}
-
-          {buttons.length === 0 && (
-            <p className="text-center text-xs text-stone-400 py-4 font-mono uppercase tracking-widest">Nenhum botão configurado</p>
-          )}
-        </div>
-
-        {profile.instagram_url && (
-          <div className="flex justify-center gap-6 mt-10 opacity-50">
-            <a href={profile.instagram_url} target="_blank" rel="noreferrer"><Instagram className="size-5" /></a>
+                </a>
+              );
+            })}
           </div>
         )}
+
+        {/* Fotos section */}
+        {photos.length > 0 && (
+          <div className="mt-10">
+            <div className="flex items-center gap-3 justify-center">
+              <div className="h-px flex-1 border-t border-dashed" style={{ borderColor: `${accent}80` }} />
+              <h2 className="text-3xl" style={{ fontFamily: "var(--font-script)", color: nameColor }}>Fotos</h2>
+              <div className="h-px flex-1 border-t border-dashed" style={{ borderColor: `${accent}80` }} />
+            </div>
+            <div className="mt-5 grid grid-cols-3 gap-2.5">
+              {photos.map((p) => (
+                <div key={p.id} className="aspect-square rounded-2xl overflow-hidden bg-white shadow-sm">
+                  <img src={p.image_url} alt="" className="w-full h-full object-cover" />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Reservar Agora */}
+        <div className="mt-10 flex justify-center">
+          <Link
+            to="/u/$slug/agendar"
+            params={{ slug }}
+            className="px-10 py-4 rounded-full text-white text-lg font-semibold shadow-xl hover:scale-[1.02] active:scale-95 transition"
+            style={{ backgroundColor: accent, boxShadow: `0 12px 30px -10px ${accent}` }}
+          >
+            Reservar Agora
+          </Link>
+        </div>
+
+        {/* Socials */}
+        <div className="mt-10 flex items-center justify-center gap-4">
+          {profile.instagram_url && (
+            <a href={profile.instagram_url} target="_blank" rel="noreferrer" className="size-11 rounded-full bg-white grid place-items-center shadow-sm" style={{ color: "#ec4899" }}>
+              <Instagram className="size-5" />
+            </a>
+          )}
+          {profile.whatsapp_phone && (
+            <a href={whatsappUrl(profile.whatsapp_phone, `Olá ${profile.business_name}!`)} target="_blank" rel="noreferrer" className="size-11 rounded-full grid place-items-center shadow-sm text-white" style={{ backgroundColor: "#25D366" }}>
+              <MessageCircle className="size-5" />
+            </a>
+          )}
+        </div>
       </div>
 
       <p className="mt-10 font-mono text-[10px] uppercase tracking-widest text-stone-400">
